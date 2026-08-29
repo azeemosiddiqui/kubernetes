@@ -1,1 +1,29 @@
-replicaset.yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rs-name
+  namespace: prod
+  labels:
+    app: myapp
+    env: prod
+    
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      env: prod
+      
+  template:
+    metadata:
+      namespace: prod
+      labels:
+        app: myapp
+        env: prod
+    spec:
+      containers:
+      - name: rs-container
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+      
