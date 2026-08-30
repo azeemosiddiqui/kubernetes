@@ -1,1 +1,22 @@
-service.yaml
+###***Service.yaml***###
+apiVersion: v1                         # Core API version for Service
+kind: Service                          # Kubernetes object type
+metadata:
+  name: nginx-service                  # Name of the Service
+  namespace: default                   # Namespace where Service is created
+  labels:                              # Labels for identifying the Service
+    app: nginx
+    env: prod
+    
+spec:
+  type: ClusterIP   #Service type (ClusterIP,NodePort,LoadBalancer, ExternalName)
+
+  selector:
+    app: nginx                         # Selects Pods having label app=nginx
+    env: prod                          # Selects Pods having label env=prod
+
+  ports:
+  - name: http                 # Port name (optional but recommended)
+    protocol: TCP              # Communication protocol
+    port: 80                   # Service port (Clients connect here)
+    targetPort: 80             # Pod container port where application is running
