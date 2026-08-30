@@ -1,29 +1,34 @@
-apiVersion: apps/v1
-kind: ReplicaSet
+###***REPLICASET.YAML***###
+apiVersion: apps/v1              # ReplicaSet belongs to the apps API group
+kind: ReplicaSet                 # Kubernetes object type
 metadata:
-  name: rs-name
-  namespace: prod
+  name: nginx-rs                 # Name of the ReplicaSet
+  namespace: prod                # Namespace where ReplicaSet is created
   labels:
-    app: myapp
+    app: nginx
     env: prod
-    
+
 spec:
-  replicas: 2
+  replicas: 3                    # Number of Pod replicas to maintain
+
   selector:
     matchLabels:
-      app: myapp
-      env: prod
-      
-  template:
+      app: nginx                 # ReplicaSet manages Pods having this label
+
+  template:                      # Blueprint for creating Pods
     metadata:
-      namespace: prod
       labels:
-        app: myapp
+        app: nginx               # Must match the selector labels
         env: prod
+        tier: frontend
     spec:
       containers:
-      - name: rs-container
-        image: nginx:latest
+      - name: nginx-container    # Container name
+        image: nginx:1.14.2      # Docker image (pulled from Docker Hub by default)
         ports:
-        - containerPort: 80
-      
+        - containerPort: 80      # Port on which the application listens
+
+
+#In a ReplicaSet, spec.selector.matchLabels must match the corresponding labels in spec.template.metadata.labels. The labels in the ReplicaSet's top-level metadata.labels are just labels for the ReplicaSet itself and don't participate in Pod selection.
+
+        
