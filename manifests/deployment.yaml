@@ -1,29 +1,34 @@
-apiVersion: apps/v1
-kind: Deployment
+###***DEPLOYMENT.YAML***###
+apiVersion: apps/v1                # API version for Deployment
+kind: Deployment                   # Kubernetes object type
 metadata:
-  name: nginx-deployment
-  namespace: prod
-  labels:
-    app: my-deploy
+  name: nginx-deployment           # Name of the Deployment
+  Labels:                          # Labels for deployment
+    app: nginx
     env: prod
 
 spec:
-  replicas: 2
+  replicas: 3                      # Desired number of Pod replicas
 
   selector:
     matchLabels:
-      app: nginx
-      env: prod
+      app: nginx                   # Deployment manages Pods with this label
 
-  template:
+  strategy:
+    type: RollingUpdate            # Default update strategy (Zero Downtime)
+    rollingUpdate:
+      maxUnavailable: 1            # Maximum Pods unavailable during update
+      maxSurge: 1                  # Extra Pods created during update
+
+  template:                        # Pod template used to create Pods
     metadata:
-      namespace: prod
-      labels:
-        app: nginx
+      Labels:                      # Labels on pods
+        app: nginx                 # Must match selector labels
         env: prod
+        tier: frontend
     spec:
       containers:
-      - name: nginx-container
-        image: nginx:latest
+      - name: nginx-container      # Container name
+        image: nginx:1.14.2        # Docker image (pulled from Docker Hub)
         ports:
-        - containerPort: 80
+        - containerPort: 80        # Application listens on port 80
