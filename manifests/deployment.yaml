@@ -3,6 +3,7 @@ apiVersion: apps/v1                # API version for Deployment
 kind: Deployment                   # Kubernetes object type
 metadata:
   name: nginx-deployment           # Name of the Deployment
+  namespace: prod                  # Namespace where Deployment is created
   Labels:                          # Labels for deployment
     app: nginx
     env: prod
