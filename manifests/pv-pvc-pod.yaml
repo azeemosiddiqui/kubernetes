@@ -1,0 +1,120 @@
+###***NAMESPACE.YAML***###
+
+apiVersion: v1                         # API version for Namespace
+kind: Namespace                        # Kubernetes object type
+
+metadata:
+  name: prod                           # Namespace name
+
+
+---
+###***SECRET.YAML***###
+
+apiVersion: v1                         # API version for Secret
+kind: Secret                           # Kubernetes object type
+
+metadata:
+  name: nginx-secret                   # Secret name
+  namespace: prod                      # Secret belongs to prod namespace
+
+type: Opaque                           # Generic key-value Secret
+
+stringData:
+  username: admin                      # Username stored in Secret
+  password: mypassword                 # Password stored in Secret
+
+
+---
+###***PERSISTENTVOLUME.YAML***###
+
+apiVersion: v1                         # API version for PersistentVolume
+kind: PersistentVolume                 # Kubernetes object type
+
+metadata:
+  name: nginx-efs-pv                   # PV name
+  labels:
+    app: nginx
+    env: prod
+
+spec:
+  capacity:
+    storage: 10Gi                      # Storage capacity
+
+  volumeMode: Filesystem               # Volume will be mounted as filesystem
+
+  accessModes:
+  - ReadWriteMany                      # Multiple Pods/nodes can read and write
+
+  persistentVolumeReclaimPolicy: Retain # Keep data after PVC deletion
+
+  storageClassName: efs-sc             # Storage class name
+
+  csi:
+    driver: efs.csi.aws.com             # AWS EFS CSI driver
+    volumeHandle: fs-0123456789abcdef0  # Your actual EFS File System ID
+
+
+---
+###***PERSISTENTVOLUMECLAIM.YAML***###
+
+apiVersion: v1                         # API version for PVC
+kind: PersistentVolumeClaim            # Kubernetes object type
+
+metadata:
+  name: nginx-efs-pvc                  # PVC name
+  namespace: prod                      # PVC belongs to prod namespace
+
+spec:
+  accessModes:
+  - ReadWriteMany                      # Multiple Pods can read/write
+
+  resources:
+    requests:
+      storage: 10Gi                    # Storage requested
+
+  storageClassName: efs-sc             # Must match PV
+
+
+---
+###***POD.YAML***###
+
+apiVersion: v1                         # API version for Pod
+kind: Pod                              # Kubernetes object type
+
+metadata:
+  name: nginx-pod                      # Pod name
+  namespace: prod                      # Pod belongs to prod namespace
+
+  labels:
+    app: nginx
+    env: prod
+
+spec:
+  containers:
+  - name: nginx-container              # Container name
+    image: nginx:latest                # NGINX Docker image
+
+    ports:
+    - containerPort: 80                # Application port
+
+    env:
+    - name: APP_USERNAME               # Environment variable
+      valueFrom:
+        secretKeyRef:
+          name: nginx-secret            # Secret name
+          key: username                 # Key inside Secret
+
+    - name: APP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: nginx-secret
+          key: password
+
+    volumeMounts:
+    - name: efs-storage                # Volume name
+      mountPath: /usr/share/nginx/html # Mount EFS inside container
+
+  volumes:
+  - name: efs-storage                 # Volume name
+    persistentVolumeClaim:
+      claimName: nginx-efs-pvc         # PVC used by Pod
