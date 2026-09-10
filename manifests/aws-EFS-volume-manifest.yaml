@@ -1,0 +1,64 @@
+###***PERSISTENTVOLUME.YAML***###
+apiVersion: v1                         # API version for PV
+kind: PersistentVolume                      # Kubernetes object type
+metadata:
+  name: nginx-efs-pv                         # PV name
+
+spec:
+  capacity:
+    storage: 10Gi                           # Storage capacity
+  volumeMode: Filesystem                    # Mount as filesystem
+  accessModes:
+  - ReadWriteMany                           # Multiple Pods can read/write
+  persistentVolumeReclaimPolicy: Retain     # Keep data after PVC deletion
+  storageClassName: efs-sc                  # PV/PVC matching
+  csi:
+    driver: efs.csi.aws.com                 # AWS EFS CSI driver
+    volumeHandle: fs-0123456789abcdef0      # Your EFS File System ID
+
+
+---
+###***PERSISTENTVOLUMECLAIM.YAML***###
+
+apiVersion: v1                         # API version for PVC
+kind: PersistentVolumeClaim            # Kubernetes object type
+metadata:
+  name: nginx-efs-pvc                  # PVC name
+  namespace: prod                      # PVC belongs to prod
+
+spec:
+  accessModes:
+  - ReadWriteMany                      # Multiple Pods can access
+
+  resources:
+    requests:
+      storage: 10Gi                    # Storage requested
+
+  storageClassName: efs-sc             # Must match PV
+
+
+---
+###***POD.YAML***###
+apiVersion: v1                         # API version for Pod
+kind: Pod                              # Kubernetes object type
+metadata:
+  name: nginx-pod                      # Pod name
+  namespace: prod                      # Pod namespace
+  labels:
+    app: nginx
+    env: prod
+
+spec:
+  containers:
+  - name: nginx-container              # Container name
+    image: nginx:latest                # NGINX image
+    ports:
+    - containerPort: 80                 # Application port
+    volumeMounts:
+    - name: efs-volume                 # Must match volumes.name
+      mountPath: /usr/share/nginx/html # EFS mounted here
+
+  volumes:
+  - name: efs-volume                   # Kubernetes volume name
+    persistentVolumeClaim:
+      claimName: nginx-efs-pvc         # PVC used by Pod
