@@ -1,0 +1,76 @@
+###***NAMESPACE.YAML***###
+apiVersion: v1                          # API version for Namespace
+kind: Namespace                         # Kubernetes resource type
+metadata:
+  name: prod                            # Name of the namespace
+
+
+---
+###***PERSISTENTVOLUME.YAML***###
+apiVersion: v1                           # API version for PersistentVolume
+kind: PersistentVolume                   # Kubernetes resource type
+metadata:
+  name: nginx-hostpath-pv                # Name of the PersistentVolume
+  labels:                                # Labels assigned to the PV
+    app: nginx                           # Application label
+    env: prod                            # Environment label
+spec:
+  capacity:                              # Storage capacity of the PV
+    storage: 1Gi                         # PV provides 1Gi storage
+
+  accessModes:                           # Defines how the volume can be accessed
+  - ReadWriteOnce                        # Volume can be mounted as read-write by one node
+
+  persistentVolumeReclaimPolicy: Retain  # Keep the PV/data when PVC is deleted
+
+  storageClassName: hostpath-sc          # StorageClass used to bind PV with PVC
+
+  hostPath:                              # Use a directory from the Kubernetes node
+    path: /root/eks-volume/empty-dir/efs # Directory path on the worker node
+    type: DirectoryOrCreate              # Create directory if it does not exist
+
+
+
+---
+###***PERSISTENTVOLUMECLAIM.YAML***###
+apiVersion: v1                          # API version for PVC
+kind: PersistentVolumeClaim             # Kubernetes resource type
+metadata:
+  name: nginx-hostpath-pvc              # Name of the PVC
+  namespace: prod                       # PVC is created inside prod namespace
+
+spec:
+  accessModes:                          # Required access mode
+  - ReadWriteOnce                       # PVC requests read-write access from one node
+  resources:                            # Storage resources requested by PVC
+    requests:
+      storage: 1Gi                      # PVC requests 1Gi storage
+  storageClassName: hostpath-sc         # Must match the PV StorageClass
+
+
+
+---
+###***POD.YAML***###
+apiVersion: v1                          # API version for Pod
+kind: Pod                               # Kubernetes resource type
+metadata:
+  name: nginx-hostpath-pod              # Name of the Pod
+  namespace: prod                       # Pod is created inside prod namespace
+  labels:                               # Labels assigned to the Pod
+    app: nginx                          # Application label
+    env: prod                           # Environment label
+
+spec:
+  containers:                           # List of containers inside the Pod
+  - name: nginx-container               # Name of the container
+    image: nginx:latest                 # Docker image used by the container
+    ports:                              # Container ports
+    - containerPort: 80                 # NGINX listens on port 80
+    volumeMounts:                       # Defines where the volume is mounted inside container
+    - name: host-volume                 # Name of the volume to mount
+      mountPath: /usr/share/nginx/html  # Path inside container where volume is mounted
+
+  volumes:                              # Volumes available to the Pod
+  - name: host-volume                   # Name of the volume
+    persistentVolumeClaim:              # Pod uses a PVC
+      claimName: nginx-hostpath-pvc     # PVC that will be attached to the Pod
