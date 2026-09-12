@@ -1,0 +1,71 @@
+###***NAMESPACE***###
+apiVersion: v1                               # API version for Namespace
+kind: Namespace                              # Kubernetes resource type
+metadata:
+  name: prod                                 # Name of the namespace
+
+---
+###***DEPLOYMENT***###
+apiVersion: apps/v1                          # API version for Deployment
+kind: Deployment                             # Kubernetes resource type
+metadata:
+  name: nginx-deployment                     # Name of the Deployment
+  namespace: prod                            # Deployment is created inside prod namespace
+  labels:
+    app: nginx                               # Deployment application label
+    env: prod                                # Deployment environment label
+
+spec:
+  replicas: 3                                # Initial number of Pods
+  selector:
+    matchLabels:
+      app: nginx                             # Deployment manages Pods with app=nginx
+  template:
+    metadata:
+      labels:
+        app: nginx                           # Pod application label
+        env: prod                            # Pod environment label
+    spec:
+      containers:
+      - name: nginx-container                # Name of the container
+        image: nginx:latest                  # Container image
+        ports:
+        - containerPort: 80                  # NGINX listens on port 80
+        resources:                           # Resource requests and limits
+          requests:
+            cpu: 100m                        # CPU requested by the container
+            memory: 128Mi                    # Memory requested by the container
+          limits:
+            cpu: 500m                        # Maximum CPU the container can use
+            memory: 256Mi                    # Maximum memory the container can use
+
+---
+###***HPA***###
+apiVersion: autoscaling/v2                   # API version for HPA
+kind: HorizontalPodAutoscaler                # Kubernetes resource type
+metadata:
+  name: nginx-hpa                            # Name of the HPA
+  namespace: prod                            # HPA is created inside prod namespace
+
+spec:
+  scaleTargetRef:                            # Resource that HPA will scale
+    apiVersion: apps/v1                      # API version of target resource
+    kind: Deployment                         # HPA will scale the Deployment
+    name: nginx-deployment                   # Deployment to be scaled
+
+  minReplicas: 3                             # Minimum number of Pods
+  maxReplicas: 5                             # Maximum number of Pods
+
+  metrics:                                   # Metrics used by HPA
+  - type: Resource                           # Use Kubernetes resource metrics
+    resource:
+      name: cpu                              # Monitor CPU usage
+      target:
+        type: Utilization                    # Calculate CPU as percentage of request
+        averageUtilization: 70               # Target average CPU utilization = 70%
+  - type: Resource                           # Use another Kubernetes resource metric
+    resource:
+      name: memory                           # Monitor memory usage
+      target:
+        type: Utilization                    # Calculate memory as percentage of request
+        averageUtilization: 70               # Target average memory utilization = 70%
