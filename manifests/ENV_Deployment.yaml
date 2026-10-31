@@ -1,0 +1,39 @@
+###***NAMESPACE.YAML***###
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod                           # Namespace name
+
+
+---
+###***DEPLOYMENT.YAML***###
+apiVersion: apps/v1                    # API version for Deployment
+kind: Deployment                       # Kubernetes object type
+metadata:
+  name: nginx-deployment               # Deployment name
+  namespace: prod                      # Deployment namespace
+
+spec:
+  replicas: 2                           # Number of Pod replicas
+  selector:
+    matchLabels:
+      app: nginx                       # Deployment manages Pods with this label
+
+  template:
+    metadata:
+      labels:
+        app: nginx                     # Pod label; must match selector
+
+    spec:
+      containers:
+      - name: nginx-container           # Container name
+        image: nginx:latest             # Container image
+        ports:
+        - containerPort: 80             # Application port
+
+        env:
+        - name: APP_USERNAME            # Environment variable name
+          value: "admin"                # Direct username value
+
+        - name: APP_PASSWORD            # Environment variable name
+          value: "mypassword123"        # Direct password value
