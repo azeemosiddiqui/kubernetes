@@ -1,0 +1,83 @@
+###***NAMESPACE.YAML***###
+apiVersion: v1                         # API version for Namespace
+kind: Namespace                        # Kubernetes object type
+metadata:
+  name: prod                           # Namespace name
+
+
+---
+###***CONFIGMAP.YAML***###
+apiVersion: v1                         # API version for ConfigMap
+kind: ConfigMap                        # Kubernetes object type
+metadata:
+  name: nginx-config                   # ConfigMap name
+  namespace: prod                      # ConfigMap belongs to prod namespace
+
+data:
+  APP_ENV: "production"                # Application environment
+  LOG_LEVEL: "info"                    # Application logging level
+  API_URL: "https://api.example.com"   # Application API URL
+
+
+---
+###***SECRET.YAML***###
+apiVersion: v1                         # API version for Secret
+kind: Secret                           # Kubernetes object type
+metadata:
+  name: nginx-secret                   # Secret name
+  namespace: prod                      # Secret belongs to prod namespace
+
+type: Opaque                           # Generic key-value Secret
+
+stringData:                            # Plain-text values; Kubernetes converts them into data
+  DB_USERNAME: "admin"                 # Database username
+  DB_PASSWORD: "mypassword123"         # Database password
+
+
+---
+###***DEPLOYMENT.YAML***###
+apiVersion: apps/v1                    # API version for Deployment
+kind: Deployment                       # Kubernetes object type
+metadata:
+  name: nginx-deployment               # Deployment name
+  namespace: prod                      # Deployment belongs to prod namespace
+
+spec:
+  replicas: 2                           # Number of Pod replicas
+
+  selector:
+    matchLabels:
+      app: nginx                       # Deployment manages Pods with this label
+
+  template:
+    metadata:
+      labels:
+        app: nginx                     # Pod label; must match selector
+
+    spec:
+      containers:
+      - name: nginx-container           # Container name
+        image: nginx:latest             # NGINX Docker image
+
+        ports:
+        - containerPort: 80             # Application port
+
+        envFrom:
+        - configMapRef:
+            name: nginx-config          # Load all ConfigMap keys as environment variables
+
+        env:
+        - name: DB_USERNAME             # Environment variable name
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret        # Secret name
+              key: DB_USERNAME         # Key inside Secret
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nginx-secret
+              key: DB_PASSWORD
+
+        - name: APP_MODE               # Direct environment variable
+          value: "production"           # Value directly defined in Deployment
